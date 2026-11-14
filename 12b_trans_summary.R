@@ -15,8 +15,8 @@
 #                    proportion QTLs) -> listed, with their proportion-QTL p-values.
 #   D. cell-type specific: for each cell-type call, are the other cell types' effects at the pair small (|z| < 2)?
 #   E. cis link    : for candidates that are cis leads (step 12a), is the trans effect in the same cell type as the cis one?
-#   F. cross-mappability (optional): if CROSSMAP_FILE (gene1, gene2 symbols; e.g. Saha & Battle 2018) is given, pairs
-#      whose trans gene is cross-mappable with any cis gene of the variant are flagged (misaligned reads look like trans).
+#   F. cross-mappability (Saha & Battle 2018, default on): pairs whose trans gene is cross-mappable with any gene within
+#      1 Mb of the variant are flagged (misaligned reads look like trans).
 # Inputs : output/12_trans_<chr>_{pairs,ntests}<SCAN_TAG>.csv, 12a_trans_candidates<SCAN_TAG>.csv, step-6 inputs
 # Outputs: output/12b_trans_calls<SCAN_TAG>.csv, 12b_trans_egenes<SCAN_TAG>.csv, 12b_trans_calibration<SCAN_TAG>.csv,
 #          12b_trans_variants<SCAN_TAG>.csv (per called variant: trans genes per test, proportion-QTL p, hub flag)
@@ -31,7 +31,7 @@ out_dir  <- file.path(pipe_dir, "output")
 CHRS     <- strsplit(Sys.getenv("CHRS", "chr21 chr22"), " ")[[1]]   # chromosomes of the GENES scanned in step 12
 SCAN_TAG <- Sys.getenv("SCAN_TAG", "_epc20")
 CAND_FILE <- Sys.getenv("CAND_FILE", file.path(out_dir, paste0("12a_trans_candidates", SCAN_TAG, ".csv")))
-CROSSMAP_FILE <- Sys.getenv("CROSSMAP_FILE", "")
+CROSSMAP_FILE <- Sys.getenv("CROSSMAP_FILE", "/oak/stanford/groups/smontgom/hkrupkin/RNA_Editing_deconvolution/for_evin_cibersorting_expression/rerun_LM22_aaron_1103/external/crossmap_saha_battle_2018/hg38_cross_mappability_strength_symmetric_mean_sorted.txt.gz")
 pc_file  <- "/labs/smontgom/grps_smontgom/shared/GTEx/all_data/GTEx_Analysis_2017-06-05_v8/eqtl/GTEx_Analysis_v8_eQTL_covariates/Whole_Blood.v8.covariates.txt"
 CELLTYPES <- c("Neutrophils", "Monocytes", "Bcells", "CD4", "CD8", "NK")
 TESTS    <- c(CELLTYPES, "het", "nl")
@@ -166,16 +166,36 @@ cand <- read.csv(CAND_FILE)
 calls <- calls %>% left_join(cand %>% select(variant_id, cis_source = source, cis_genes), by = "variant_id")
 calls$same_celltype_as_cis <- mapply(function(tt, src) tt %in% strsplit(src, ";")[[1]], calls$test, calls$cis_source)
 
-## ================= F. cross-mappability (optional) =================
+## ================= F. cross-mappability (Saha & Battle 2018) =================
+# Their recommendation: drop a trans pair if the trans gene is cross-mappable (> 0 shared k-mers, up to 2 mismatches)
+# with ANY gene within 1 Mb of the variant: reads from a local gene that mis-map to the distant gene look like trans.
+# File: GRCh38 / GENCODE v26 (the annotation GTEx v8 used), symmetric cross-mappability, Ensembl ids; downloaded 11.14
+# from figshare 7315136 (md5 checked). CROSSMAP_FILE="" switches the check off.
+gtf_file <- "/labs/smontgom/grps_smontgom/shared/GTEx/all_data/GTEx_Analysis_2017-06-05_v8/references/gencode.v26.GRCh38.genes.gtf"
+gtf <- fread(cmd = paste("grep -P '\\tgene\\t'", gtf_file), header = FALSE)
+gtf$gene_id <- sub('.*gene_id "([^"]+)".*', "\\1", gtf$V9)
+gtf$gene_name <- sub('.*gene_name "([^"]+)".*', "\\1", gtf$V9)
+gtf$gene_type <- sub('.*gene_type "([^"]+)".*', "\\1", gtf$V9)
+CROSSMAP_WIN <- 1e6
 calls$crossmappable <- NA
 if (nzchar(CROSSMAP_FILE)) {
-  cm <- fread(CROSSMAP_FILE, header = TRUE)
-  setnames(cm, 1:2, c("gene1", "gene2"))
+  # Ensembl ids of each called pair's trans gene and of the genes within 1 Mb of its variant
+  calls$var_chr <- sub("_.*", "", calls$variant_id)
+  calls$var_pos <- as.numeric(sapply(strsplit(calls$variant_id, "_"), `[`, 2))
+  trans_ids <- lapply(calls$gene_name, function(g) gtf$gene_id[gtf$gene_name == g])
+  local_ids <- lapply(seq_len(nrow(calls)), function(i) {
+    gtf$gene_id[gtf$V1 == calls$var_chr[i] & gtf$V5 >= calls$var_pos[i] - CROSSMAP_WIN & gtf$V4 <= calls$var_pos[i] + CROSSMAP_WIN]
+  })
+  # the cross-mappability file, only the rows touching a called trans gene (28M rows in all)
+  cm <- fread(CROSSMAP_FILE, header = FALSE, select = 1:2, col.names = c("gene1", "gene2"))
+  needed <- unique(unlist(trans_ids))
+  cm <- cm[gene1 %in% needed | gene2 %in% needed]
   cm_key <- unique(c(paste(cm$gene1, cm$gene2), paste(cm$gene2, cm$gene1)))
-  calls$crossmappable <- mapply(function(g, cis) {
-    if (is.na(cis)) return(NA)
-    any(paste(g, strsplit(cis, ";")[[1]]) %in% cm_key)
-  }, calls$gene_name, calls$cis_genes)
+  rm(cm)
+  calls$crossmappable <- mapply(function(tr, loc) {
+    any(outer(tr, loc, paste) %in% cm_key)
+  }, trans_ids, local_ids)
+  cat("calls cross-mappable with a gene within 1 Mb of the variant:", sum(calls$crossmappable), "of", nrow(calls), "\n")
 }
 calls <- calls %>% left_join(var_tab %>% select(variant_id, propqtl_min_p, propqtl_flag, hub), by = "variant_id")
 
@@ -186,12 +206,8 @@ calls <- calls %>% left_join(var_tab %>% select(variant_id, propqtl_min_p, propq
 #   name_link  : the trans gene's name starts with the name of a cis gene of the variant, or the reverse
 #                (SIRPA -> SIRPAP1; paralog / pseudogene naming)
 #   receptor   : immunoglobulin, T-cell receptor, KIR or HLA genes (hypervariable, hard to map, clonal)
-gtf_file <- "/labs/smontgom/grps_smontgom/shared/GTEx/all_data/GTEx_Analysis_2017-06-05_v8/references/gencode.v26.GRCh38.genes.gtf"
-gtf <- fread(cmd = paste("grep -P '\\tgene\\t'", gtf_file), header = FALSE)
-gtf$gene_name <- sub('.*gene_name "([^"]+)".*', "\\1", gtf$V9)
-gtf$gene_type <- sub('.*gene_type "([^"]+)".*', "\\1", gtf$V9)
 gene_type <- setNames(gtf$gene_type, gtf$gene_name)
-calls$gene_type <- unname(gene_type[calls$gene_name])
+calls$gene_type <- unname(gene_type[calls$gene_name])  # (gtf read in F)
 calls$pseudogene <- grepl("pseudogene", calls$gene_type)
 calls$name_link <- mapply(function(g, cis) {
   if (is.na(cis)) return(FALSE)

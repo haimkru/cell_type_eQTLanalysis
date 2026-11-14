@@ -145,7 +145,8 @@ the number of real pairs below it.
 - the trans gene is a pseudogene;
 - the trans gene's name contains a cis gene's name, or the reverse (paralogs, pseudogenes);
 - immunoglobulin, TCR, KIR or HLA genes;
-- optionally, a cross-mappability list (Saha & Battle 2018).
+- the trans gene cross-maps with any gene within 1 Mb of the variant (Saha & Battle 2018; GRCh38 / GENCODE v26 list,
+  figshare 7315136; their recommended filter).
 
 *chr22 test.* 706 genes, 7 minutes on 16 CPUs, so genome-wide is about 3-4 hours.
 - The real scan kept no more pairs at p < 1e-4 than the shuffles (409 vs 394-429).
@@ -154,7 +155,8 @@ the number of real pairs below it.
   - the strongest (SIRPAP1, p 5e-44) is a mapping artefact: a processed pseudogene of SIRPA, at SIRPA's own cis lead;
   - one is an immunoglobulin gene;
   - one is at a proportion-QTL variant;
-  - 3 are clean (RP4-669P10.16 in B, and XPNPEP3 in NK and het), which is about the noise level (8 tests × 0.2).
+  - XPNPEP3 (NK and het) cross-maps with a gene near its variant;
+  - only 1 is clean (RP4-669P10.16 in B), which is at the noise level (8 tests × 0.2).
 - So trans effects at this sample size are expected to be few, and the artefact filters are needed.
 
 **Result.** Calibrated eGenes: neutrophils 2,345, monocytes 146, B 99, CD4 86, CD8 317, NK 183 (without hidden-noise PCs:
