@@ -1,0 +1,21 @@
+# Allow-list: only code and docs are tracked. Data (GTEx expression, genotypes, proportions, results), logs and
+# figures never leave the cluster. Ignore everything, then allow the code/doc file types in the top folder only.
+*
+!.gitignore
+!*.R
+!*.sh
+!*.sbatch
+!*.cpp
+!*.py
+!*.md
+# never: outputs, logs, old versions, plots, credentials
+output/
+logs/
+superseded/
+private/
+Rplots.pdf
+*.rds
+*.csv
+*.tsv
+*.gz
+*.json
