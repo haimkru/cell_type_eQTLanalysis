@@ -37,6 +37,7 @@
 ## Trans-eQTLs (user 11.14: "cell type specific transqtls")
 - [x] Steps 12a / 12 / 12b written; engine identical to step 6 (1e-15); chr22 test: 6 calls, 3 clean (~noise level), top
       call SIRPAP1 = pseudogene artefact -> built-in artefact flags added
+- [x] chr21-22 (11.14): 15 calls, 0 clean (14 cross-mappable, mostly the chr21 CBS/CBSL, PWP2/C21orf33 duplication; 1 pseudogene)
 - [ ] Genome-wide (STEPS="12 12b" CHRS=all 22; ~3-4 h on 16 CPUs) -- needs the user's go
 - [x] Saha & Battle 2018 cross-mappability list downloaded (external/crossmap_saha_battle_2018/, md5 ok), default in 12b;
       it flags SIRPAP1 independently and XPNPEP3 -> chr22: 1 clean call of 6

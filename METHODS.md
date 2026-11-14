@@ -159,6 +159,15 @@ the number of real pairs below it.
   - only 1 is clean (RP4-669P10.16 in B), which is at the noise level (8 tests × 0.2).
 - So trans effects at this sample size are expected to be few, and the artefact filters are needed.
 
+*chr21-22 together (pooled FDR).*
+- Calibration: 0.2-0.4 false calls per test per shuffle.
+- 15 calls, 0 clean:
+  - 14 cross-map with a gene near the variant, most in the chr21 segmental duplication (CBS / CBSL, PWP2 / C21orf33 /
+    CH507-9B2 genes at ~5-6 Mb and ~43-44 Mb, near-identical copies);
+  - the last (TEKT4P2) is a pseudogene.
+- So, with these candidates and n = 670, every calibrated trans call so far is a read-mapping artefact, and the filters
+  remove all of them. A genome-wide run is cheap (~3-4 h), but few or no clean trans-eQTLs are expected.
+
 **Result.** Calibrated eGenes: neutrophils 2,345, monocytes 146, B 99, CD4 86, CD8 317, NK 183 (without hidden-noise PCs:
 1,191, 65, 54, 25, 195, 72).
 
