@@ -1,6 +1,8 @@
 #!/bin/bash
 #author: haim krupkin+claude
 #date: 11.07.2026 (11.08: one engine; old steps 6-9 moved to superseded/; calibrated calls; robustness check; compiled kernel)
+manual review started by hk on 11/14/2026 -  end of  reviewed: 11/14/2026 code is good :)
+#we also check we arent publishing anything confidental.
 #description: MASTER script. Cell-type eQTLs from GTEx whole-blood bulk RNA-seq, without leakage and without the
 # way-of-death batch effect. Every script of the pipeline is in this folder; outputs go to output/, logs to logs/.
 #
@@ -64,12 +66,15 @@
 set -euo pipefail
 
 ## ================= settings =================
+#these are just general settings and arent that important
 PIPE_DIR=/oak/stanford/groups/smontgom/hkrupkin/RNA_Editing_deconvolution/for_evin_cibersorting_expression/rerun_LM22_aaron_1103/final_pipeline
 LOGS=${PIPE_DIR}/logs
 GENO=/oak/stanford/groups/smontgom/hkrupkin/RNA_Editing_deconvolution/for_evin_cibersorting_expression/genotypes/GTEx_v8_WholeBlood_670donors_MAF01_plink1
 PLINK2=/home/hkrupkin/envs/catca-edit/bin/plink2
+#this enables skipping of stuff and such :)
 STEPS=${STEPS:-"1 2 3 4 5 5b 5c 6 7"}
 export CHRS=${CHRS:-"chr21 chr22"}
+#we should awlays set it to not 0 as this increases accuracy.
 # 11.13: main result = 20 hidden-noise PCs (tag _epc20; also names the logs). Set them to "" (and N_EPC=0) for the
 # model without; ${X-default} keeps an explicitly empty value
 export N_EPC=${N_EPC-20}
@@ -77,11 +82,13 @@ export OUT_TAG=${OUT_TAG-_epc20}
 export SCAN_TAG=${SCAN_TAG-_epc20}
 export NULL_TAG=${NULL_TAG-_epc20}
 export SPIKE_TAG=${SPIKE_TAG-_epc20}
+#this is to load R for the r steps
 module load R/4.3.3 2>/dev/null || true
 mkdir -p "${PIPE_DIR}/output"
 mkdir -p "${LOGS}"
 
 ## ================= helper: run one step, write its log =================
+#this helps us run steps while logging them, incase thigns fail :) 
 run_step () {
   local name=$1
   shift
@@ -91,6 +98,7 @@ run_step () {
 }
 
 ## ================= steps =================
+#this clarifies what each step does.
 for s in ${STEPS}
 do
   case ${s} in
