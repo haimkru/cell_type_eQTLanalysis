@@ -1,6 +1,6 @@
 // author: haim krupkin+claude
 // date: 11.08.2026
-// description: compiled kernel of step 6 (06_cis_scan.R): the weighted regression for every cis variant of one gene.
+// description: compiled kernel of step 6 (06_cis_scan.R): the weighted regression for every cis variant of one gene. this was mostly implemented for speed and looks linda robust.
 // Same math as the R version it replaced (results identical to ~1e-15), ~10x faster, so the scan can run genome-wide.
 // For variant v (genotype g, centred) and the gene's scaled data:
 //   Z     = A[, a] * g for every column a of A (6 cell types, then the death variables)   -> samples x p
@@ -100,3 +100,4 @@ arma::mat fit_variants_k_cpp(const arma::mat& G, const arma::mat& A, const arma:
   }
   return out;
 }
+#math not fully verified by hk 11/14/2026 as its hard to verifiy
