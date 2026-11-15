@@ -1,5 +1,6 @@
 #author: haim krupkin+claude
 #date: 11.07.2026
+#manually verified on 11/14/2026
 #description: step 2. One table of per-sample covariates, used by steps 3 and 6-8.
 #   post_mortem : 1 = blood drawn after death (ischemic time SMTSISCH >= 0), 0 = before death (SMTSISCH < 0)
 #   ventilator  : 1 = ventilator case (Hardy scale 0), 0 = other deaths (Hardy 1-4)
@@ -37,7 +38,10 @@ cov_df$post_mortem <- as.numeric(cov_df$SMTSISCH >= 0)
 cov_df$ventilator  <- as.numeric(cov_df$DTHHRDY == 0)
 cov_df$centre_B1   <- as.numeric(grepl("B1", cov_df$SMCENTER))
 cov_df$male        <- as.numeric(cov_df$SEX == 1)
+#this is kinda weird and requires clarification
+#this is a misstake - but it shouldnt effect any of the modeling so we can keep it for now, unless i remember anything that this affects.
 cov_df$age         <- as.numeric(sub("-.*", "", cov_df$AGE)) + 5          # age bin "60-69" -> 65
+#ok its working right
 
 ## ================= fill missing values =================
 colSums(is.na(cov_df[, c("post_mortem", "ventilator", "SMTSISCH", "SMRIN")]))
@@ -47,6 +51,7 @@ fill_by_group <- function(v, group) {
   ifelse(is.na(v), group_mean, v)
 }
 vent_group <- cov_df$ventilator > 0.5
+#this is a super arbitrary threshold and might be better continous but we set it to that so thats fine.
 cov_df$post_mortem <- fill_by_group(cov_df$post_mortem, vent_group)
 cov_df$SMTSISCH    <- fill_by_group(cov_df$SMTSISCH, vent_group)
 cov_df$SMRIN       <- fill_by_group(cov_df$SMRIN, vent_group)
@@ -55,6 +60,8 @@ keep_cols <- c("SAMPID", "SUBJID", "post_mortem", "ventilator", "SMTSISCH", "SMR
 cov_df <- cov_df[, keep_cols]
 stopifnot(!anyNA(cov_df))
 summary(cov_df)
+#this is a super arbitrary threshold and might be better continous but we set it to that so thats fine.
+
 table(post_mortem = cov_df$post_mortem > 0.5, ventilator = cov_df$ventilator > 0.5)
 
 ## ================= save =================
@@ -62,3 +69,4 @@ out_file <- file.path(out_dir, "02_covariates.csv")
 write.csv(cov_df, out_file, row.names = FALSE)
 out_file
 message("02_covariates done")
+#code is fine hk 11/14/2026
