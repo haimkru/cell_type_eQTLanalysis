@@ -1,5 +1,8 @@
 #author: haim krupkin+claude
 #date: 11.07.2026
+#modified by hk to examine if its good
+#manual verification by hk on 11/14/2026
+
 #description: step 3. Remove the way-of-death batch effect from the expression BEFORE CIBERSORTx.
 # Why: blood draw (pre/post-mortem) explains ~70% of expression PC1 and shifts the estimated proportions
 # (neutrophils 0.64 pre vs 0.36 post). We want proportions that vary between people, not between ways of death.
@@ -45,16 +48,16 @@ dimnames(X_new) <- dimnames(X)
 # re-TPM
 X_new <- sweep(X_new, 2, colSums(X_new), "/")
 X_new <- X_new * 1e6
-stopifnot(min(X_new) >= 0)
+stopifnot(min(X_new) >= 0) #this makes me a bit worried ill double check it
 
 saveRDS(X_new, file.path(out_dir, "03_tpm_noHb_batch_removed.rds"))
 X_new <- readRDS(file.path(out_dir, "03_tpm_noHb_batch_removed.rds"))   # <- start here to skip
 
 ## ================= check: does blood draw still explain PC1? =================
 pc1_adj_r2 <- function(M) {
-  L <- log2(M + 1)
+  L <- log2(M + 1) #this is a bit worriesome but not very
   gene_var <- apply(L, 1, var)
-  top <- order(-gene_var)[1:5000]                                       # 5,000 most variable genes
+  top <- order(-gene_var)[1:5000]                                       # 5,000 most variable genes #this is a heuristic that isnt really needed but should be noted in the description in the code
   pc <- prcomp(t(L[top, ]), center = TRUE, scale. = TRUE)
   fit <- lm(pc$x[, 1] ~ cov_df$post_mortem)
   summary(fit)$adj.r.squared
@@ -70,3 +73,4 @@ out_file <- file.path(out_dir, "03_tpm_noHb_batch_removed.tsv")
 fwrite(tsv_out, out_file, sep = "\t")
 out_file
 message("03_remove_batch done")
+                 #code passes review hk 11-14-2026
