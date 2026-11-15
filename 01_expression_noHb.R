@@ -1,5 +1,7 @@
 #author: haim krupkin+claude
 #date: 11.07.2026
+#haim is doing manual review to ensure codde is robust 11/14/2026
+#this code removes the hemoglobin genes
 #description: step 1. GTEx whole-blood expression without haemoglobin genes.
 #   1. read the GTEx TPM (670 whole-blood samples)
 #   2. remove the 10 haemoglobin genes (they are > half of all reads in blood and distort every per-sample scaling)
@@ -17,9 +19,11 @@ suppressMessages(library(data.table))
 pipe_dir <- "/oak/stanford/groups/smontgom/hkrupkin/RNA_Editing_deconvolution/for_evin_cibersorting_expression/rerun_LM22_aaron_1103/final_pipeline"
 out_dir  <- file.path(pipe_dir, "output")
 tpm_file <- "/oak/stanford/groups/smontgom/hkrupkin/RNA_Editing_deconvolution/for_evin_cibersorting_expression/expression/gtex_wholeblood_gene_tpm.csv.gz"
+#this looks like the majority of hemoglobin genes
+# yeah this is pretty conservative setting it ot 10 genes
 HB_GENES <- c("HBA1", "HBA2", "HBB", "HBD", "HBG1", "HBG2", "HBM", "HBQ1", "HBZ", "HBE1")
-TPM_THRESHOLD <- 0.1      # gene subset: TPM above this ...
-MIN_FRACTION  <- 0.2      # ... in at least this share of samples
+TPM_THRESHOLD <- 0.1      # gene subset: TPM above this ... #good threshold
+MIN_FRACTION  <- 0.2      # ... in at least this share of samples #good threshold
 
 ## ================= 1. read =================
 tpm_raw <- fread(tpm_file)
@@ -61,3 +65,4 @@ out_files <- file.path(out_dir, c("01_tpm_noHb_all_genes.tsv", "01_gene_subset.t
 out_files
 stopifnot(all(file.exists(out_files)))
 message("01_expression_noHb done")
+#code is good
