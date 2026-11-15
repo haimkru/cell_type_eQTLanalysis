@@ -1,5 +1,6 @@
 #author: haim krupkin+claude
 #date: 11.12.2026
+#manuly checked by hk on 11/14/2026
 #description: step 5c (under test, 11.12). Hidden-noise factors for the eQTL model: principal components of the
 # expression that is LEFT after removing cell composition and the known covariates.
 # Why not plain expression PCs (or GTEx PEER factors)? In blood those mostly capture cell composition (neutrophil vs
@@ -22,7 +23,7 @@ pc_file  <- "/labs/smontgom/grps_smontgom/shared/GTEx/all_data/GTEx_Analysis_201
 CELLTYPES <- c("Neutrophils", "Monocytes", "Bcells", "CD4", "CD8", "NK")
 DEATH     <- c("post_mortem", "ventilator")
 OTHER_COV <- c("SMTSISCH", "SMRIN", "centre_B1", "male", "age")
-N_PCS     <- 20
+N_PCS     <- 20 # we chose 20 arbitrarly we should use teh gavandish danaho method but implementaion takes time u know? and is it that sensitive?
 
 ## ================= read =================
 cov_df <- read.csv(file.path(out_dir, "02_covariates.csv"))
@@ -61,3 +62,4 @@ write.csv(ePC, file.path(out_dir, "05c_expression_pcs.csv"), row.names = FALSE)
 write.csv(data.frame(pc = paste0("ePC", 1:N_PCS), variance_explained = var_expl),
           file.path(out_dir, "05c_variance_explained.csv"), row.names = FALSE)
 message("05c_expression_pcs done")
+                                 #haim verified code
