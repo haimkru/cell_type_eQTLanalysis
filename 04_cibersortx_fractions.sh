@@ -1,6 +1,7 @@
 #!/bin/bash
 #author: haim krupkin+claude
 #date: 11.07.2026 (11.08: also the raw mixture, for the robustness check)
+#checked by hk on 11/14/2026
 #description: step 4. CIBERSORTx Fractions (cell-type proportions), two runs:
 #   main : mixture output/03_tpm_noHb_batch_removed.tsv (linear TPM, Hb-free, way-of-death batch removed)
 #          -> output/04_cibersortx/fractions.tsv            (used by the eQTL scan)
@@ -40,6 +41,6 @@ run_fractions () {
 
 ## ================= main: batch-removed mixture =================
 run_fractions "${PIPE_DIR}/output/03_tpm_noHb_batch_removed.tsv" "${PIPE_DIR}/output/04_cibersortx"
-
+#thiis code is robust and passes review hk 11-14-2026
 ## ================= robustness check: raw mixture =================
 run_fractions "${PIPE_DIR}/output/01_tpm_noHb_all_genes.tsv" "${PIPE_DIR}/output/04_cibersortx_raw"
