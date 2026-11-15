@@ -1,12 +1,14 @@
 #author: haim krupkin+claude
 #date: 11.10.2026
+#i love RNA share so i love this concept
+#checked manually by hk - 11/14/2026
 #description: step 5b. Expression of each gene in each cell type (theta), for the RNA-share weights (phi) of step 6
 # (MODEL=phi, under test). Why: step 6 weighted each cell type's genotype effect by its share of CELLS (W). A cell type's
 # effect on bulk expression is really weighted by its share of the gene's RNA:
 #   phi_c(i) = W_c(i) * theta_c / sum_k W_k(i) * theta_k
 # e.g. a B-cell gene: B cells are ~5% of cells but ~100% of its RNA. caNRD_editQTL uses the same phi for edQTLs.
 # theta per gene: non-negative least squares of the linear TPM on the 6 proportions over all samples
-# (TPM_i = sum_c W_c(i) theta_c), floor 1e-3 (= "not expressed"), as caNRD_editQTL's GTEx theta.
+# (TPM_i = sum_c W_c(i) theta_c), floor 1e-3 (= "not expressed"), as caNRD_editQTL's GTEx theta. (this is a later project hk is invovled with and will report later.
 # Inputs : output/01_tpm_noHb.rds (linear TPM, Hb-free), 01_gene_subset.txt, 05_proportions_6classes.csv, 02_covariates.csv
 # Output : output/05b_theta.csv (gene_name + 6 cell types), output/05b_mean_phi.csv (mean phi per gene and cell type)
 suppressMessages(library(dplyr))
@@ -48,3 +50,4 @@ print(colSums(mean_phi >= 0.10))
 write.csv(data.frame(gene_name = genes, theta, check.names = FALSE), file.path(out_dir, "05b_theta.csv"), row.names = FALSE)
 write.csv(data.frame(gene_name = genes, mean_phi, check.names = FALSE), file.path(out_dir, "05b_mean_phi.csv"), row.names = FALSE)
 message("05b_theta done")
+                 #code is verified to be robust by hk haim krupkin :) 
