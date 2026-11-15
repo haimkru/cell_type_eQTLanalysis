@@ -1,5 +1,7 @@
 #author: haim krupkin+claude
 #date: 11.07.2026 (11.08: also the raw-mixture run, for the robustness check)
+#Manual review by hk on 11/14/2026
+
 #description: step 5. LM22's 22 cell types -> 6 broad classes, the proportions used by the eQTL step.
 #   Neutrophils = Neutrophils
 #   Monocytes   = Monocytes + Macrophages M0, M1, M2
@@ -7,7 +9,10 @@
 #   CD4         = CD4 naive, memory resting, memory activated, T follicular helper, Tregs
 #   CD8         = CD8
 #   NK          = NK resting + NK activated
+#i agree with these defintions :)
 # Left out (small): gamma delta T, dendritic cells, mast cells, eosinophils. The 6 classes are rescaled to sum to 1,
+#hk- good strategy to leave out other that are small and we cant estiamte, hopefully it wont leak.
+
 # with a floor of 1e-4 (the TCA model needs every proportion > 0).
 # Done for both step-4 runs: main (batch-removed mixture) and raw (robustness check).
 # Also prints the mean per class, pre- vs post-mortem (the batch removal should make these similar).
@@ -25,6 +30,7 @@ classes  <- c("Neutrophils", "Monocytes", "Bcells", "CD4", "CD8", "NK")
 cov_df   <- read.csv(file.path(out_dir, "02_covariates.csv"))
 
 ## ================= 22 LM22 types -> 6 classes, floor, sum to 1 =================
+#this is good concentlation of  defintions
 to_6_classes <- function(fractions_file) {
   fr <- as.data.frame(fread(fractions_file))
   W <- data.frame(SAMPID = fr$Mixture)
@@ -36,7 +42,7 @@ to_6_classes <- function(fractions_file) {
   W$CD8         <- fr$T_cells_CD8
   W$NK          <- fr$NK_cells_resting + fr$NK_cells_activated
   m <- as.matrix(W[, classes])
-  m <- pmax(m, 1e-4)
+  m <- pmax(m, 1e-4) #this is good to know and needs to be noted in the methods 
   m <- m / rowSums(m)
   W[, classes] <- m
   W
@@ -68,3 +74,4 @@ out_files <- file.path(out_dir, c("05_proportions_6classes.csv", "05_proportions
 out_files
 stopifnot(all(file.exists(out_files)))
 message("05_proportions_6classes done")
+#reviewed and should be good by hk 11/14/2026
