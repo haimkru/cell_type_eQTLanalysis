@@ -1,5 +1,9 @@
 #author: haim krupkin+claude
 #date: 11.07.2026 (11.08: robust HC3 errors; MODEL pre/post; renumbered from step 10 to step 6)
+#manually verified by hk this part is hella complex.... 11/14/2026
+#this is gonna take some time to verifiy and the code long as hell.
+
+
 #description: step 6. Cell-type eQTL scan over ALL cis variants of ALL expressed genes of one chromosome (CHR), with
 # contrast tests between cell types. ONE joint model per gene and variant: all 6 cell-type effects estimated together.
 # Model (TCA, Rahmani 2019), per sample i and cell type h:
@@ -12,7 +16,7 @@
 # the main scan's best variants; death variables that do not vary in the group are dropped) / rawprops (robustness:
 # all samples, the main scan's best variants, proportions from CIBERSORTx on the raw, not batch-removed, mixture).
 # How it is computed (fast):
-#   - TCA estimates the effects by weighted least squares, each sample weighted by its expected variance
+#   - TCA estimates the effects by weighted least squares, each sample weighted by its expected variance #thats true
 #     sum_h W_h^2 sigma_h^2 + tau^2 (TCA's tca.fit_means_vars). So:
 #     a. one TCA fit per gene WITHOUT genotype (death per cell type in C1, other covariates in C2) -> sigma_h, tau
 #     b. for every variant: the same weighted regression with the genotype added
@@ -55,7 +59,7 @@ attr_ann_file <- "/oak/stanford/groups/smontgom/hkrupkin/RNA_Editing_deconvoluti
 # 21 -> 30, first calibrated het / neutrophil-vs-lymphoid genes (0 -> 2), calibration unchanged (~0.1 false per shuffle).
 # The 1 Mb genome-wide results are kept in output/superseded/window1Mb_1110/.
 WINDOW   <- as.numeric(Sys.getenv("WINDOW", "1e5"))
-MIN_MAF  <- 0.05
+MIN_MAF  <- 0.05 #hk true 11/14/2026
 N_CORES  <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "8"))
 N_TEST   <- as.integer(Sys.getenv("N_TEST", "0"))           # > 0: only the first N_TEST genes (quick test)
 # deathadj (main, all samples) / pre / post (replication) / rawprops (robustness: proportions from the raw mixture)
@@ -79,7 +83,7 @@ N_SHUFFLES <- if (MODEL %in% c("deathadj", "lead")) as.integer(Sys.getenv("N_SHU
 CELLTYPES <- c("Neutrophils", "Monocytes", "Bcells", "CD4", "CD8", "NK")
 LYMPHOID  <- c("Bcells", "CD4", "CD8", "NK")
 DEATH     <- c("post_mortem", "ventilator")
-OTHER_COV <- c("SMTSISCH", "SMRIN", "centre_B1", "male", "age")
+OTHER_COV <- c("SMTSISCH", "SMRIN", "centre_B1", "male", "age") #true hk 11/14/2026
 
 ## ================= samples, proportions, covariates =================
 cov_df <- read.csv(file.path(out_dir, "02_covariates.csv"))
@@ -95,10 +99,9 @@ W <- as.matrix(W_df[sample_ids, CELLTYPES])
 
 pcs <- fread(pc_file)
 setnames(pcs, 1, "ID")
-pcs <- pcs[ID %in% paste0("PC", 1:5)]
+pcs <- pcs[ID %in% paste0("PC", 1:5)] #weird- i think its genotype
 PC <- t(as.matrix(pcs[, cov_df$SUBJID, with = FALSE]))
 colnames(PC) <- pcs$ID
-# death variables: keep the ones that vary in these samples (a two-value one needs >= 10 samples on each side)
 varies <- function(v) {
   counts <- table(round(v, 6))
   length(counts) > 2 || (length(counts) == 2 && min(counts) >= 10)
@@ -122,6 +125,8 @@ if (N_EPC > 0) {
 # Result 11.11 (chr21-22, OUT_TAG=_labbatch): hits nearly the same (Neut 52 -> 56, 49 in both; B 12 -> 13; CD8 8 -> 9;
 # Mono 4 -> 4), effects at the same variant rho 0.94-1.00, ratio 0.96-1.01, all same sign -> not used in the main run.
 # (The nucleic-acid batch SMNABTCH was not tested: 312 batches of ~2 samples, no proportion effect beyond permutation.)
+                           #hk we dont adjust by lb batch i think in the end 11/14/2026
+
 LABBATCH <- Sys.getenv("LABBATCH", "0") == "1"
 if (LABBATCH) {
   ann <- fread(attr_ann_file, select = c("SAMPID", "SMGEBTCH"), quote = "")
@@ -186,8 +191,8 @@ if (MODEL %in% c("spike", "lead")) null_file <- file.path(out_dir, paste0("06_sc
 if (LABBATCH) null_file <- sub("_null_fit", "_labbatch_null_fit", null_file)
 if (N_EPC > 0) null_file <- sub("_null_fit", paste0("_epc", N_EPC, "_null_fit"), null_file)
 if (!file.exists(null_file)) {
-  c1 <- if (ncol(death) > 0) death else NULL
-  m0 <- tca(X = X, W = W, C1 = c1, C2 = C2, parallel = N_CORES > 1, num_cores = N_CORES, verbose = FALSE)
+  c1 <- if (ncol(death) > 0) death else NULL 
+  m0 <- tca(X = X, W = W, C1 = c1, C2 = C2, parallel = N_CORES > 1, num_cores = N_CORES, verbose = FALSE) #this is actual tca :)
   saveRDS(list(sigmas = m0$sigmas_hat, tau = m0$tau), null_file)
 }
 null_fit <- readRDS(null_file)   # <- start here to skip
@@ -228,7 +233,7 @@ if (MODEL == "lead") {
 # 11.10: default ON (chr21-22 tests: minor-cell eGenes 0 -> 2-15 per cell type, calibration ~0.1 false per shuffle,
 # 100% pre/post and raw-proportion replication, NK hits confirmed in OneK1K). PHI=0 = the old cell-share model.
 PHI <- Sys.getenv("PHI", "1") == "1"
-PHI_GATE <- 0.10
+PHI_GATE <- 0.10 #true 
 if (PHI) {
   theta_df <- read.csv(file.path(out_dir, "05b_theta.csv"))
   theta <- as.matrix(theta_df[, CELLTYPES])
@@ -416,3 +421,4 @@ gene_cols <- c("chr", "model", "gene_name", "test", "set", "variant_id", "n_vari
 write.csv(top[, gene_cols], file.path(out_dir, paste0("06_scan_", CHR, "_genes", suffix, ".csv")), row.names = FALSE)
 write.csv(top, file.path(out_dir, paste0("06_scan_", CHR, "_top_variants", suffix, ".csv")), row.names = FALSE)
 message("06_cis_scan done: ", CHR, " ", MODEL)
+#verified on 11/14/2026 by hk
